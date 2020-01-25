@@ -13,7 +13,6 @@
 // You should have received a copy of the GNU General Public License
 // along with f_data_sharing_manager.cpp.  If not, see <http://www.gnu.org/licenses/>. 
 
-#include "aws_sock.hpp"
 #include "f_data_sharing_manager.hpp"
 DEFINE_FILTER(f_data_sharing_manager);
 
@@ -106,8 +105,8 @@ bool f_data_sharing_manager::proc()
   // sending phase
   if(m_svr && m_client_fixed || !m_svr){
     m_wbuf_head = m_wbuf_tail = 0;
-	(*(long long*)m_wbuf) = m_cur_time;
-	m_wbuf_tail = sizeof(m_cur_time);
+    (*(long long*)m_wbuf) = m_cur_time;
+    m_wbuf_tail = sizeof(m_cur_time);
     for(int ich = 0; ich < m_chin.size(); ich++)
       m_wbuf_tail += (int)(m_chin[ich]->read_buf(m_wbuf + m_wbuf_tail));
     
@@ -152,57 +151,57 @@ bool f_data_sharing_manager::proc()
   // recieving phase
   m_rbuf_head = m_rbuf_tail = 0;
   while(m_rbuf_tail != m_len_pkt_rcv){
-      FD_ZERO(&fr);
-      FD_ZERO(&fe);
-      FD_SET(m_sock, &fr);
-      FD_SET(m_sock, &fe);
-      tv.tv_sec = 0;
-      tv.tv_usec = 1000; 
+    FD_ZERO(&fr);
+    FD_ZERO(&fe);
+    FD_SET(m_sock, &fr);
+    FD_SET(m_sock, &fe);
+    tv.tv_sec = 0;
+    tv.tv_usec = 1000; 
       
-      res = select((int) m_sock + 1, &fr, NULL, &fe, &tv);
-      if(FD_ISSET(m_sock, &fr)){
-	int res = 0;
-	//res = recv(m_sock, m_rbuf, m_len_pkt_rcv - m_rbuf_tail, 0);
-	m_sz_sock_addr_snd = sizeof(m_sock_addr_snd);
-	res = recvfrom(m_sock, 
-		       (char*) m_rbuf + m_rbuf_tail, 
-		       m_len_pkt_rcv - m_rbuf_tail,
-		       0,
-		       (sockaddr*) & m_sock_addr_snd, 
-		       &m_sz_sock_addr_snd);
+    res = select((int) m_sock + 1, &fr, NULL, &fe, &tv);
+    if(FD_ISSET(m_sock, &fr)){
+      int res = 0;
+      //res = recv(m_sock, m_rbuf, m_len_pkt_rcv - m_rbuf_tail, 0);
+      m_sz_sock_addr_snd = sizeof(m_sock_addr_snd);
+      res = recvfrom(m_sock, 
+		     (char*) m_rbuf + m_rbuf_tail, 
+		     m_len_pkt_rcv - m_rbuf_tail,
+		     0,
+		     (sockaddr*) & m_sock_addr_snd, 
+		     &m_sz_sock_addr_snd);
 	
-	if(res == -1)
-	  break;
-	else if (res == 0){
-	  cerr << "Socket has been closed, trying reconnect." << endl;
-	  return reconnect();
-	}else
-	  m_rbuf_tail += res;
-
-	if(m_rbuf_tail == m_len_pkt_rcv){
-	  m_client_fixed = true;
-	  m_tshare = *((long long*)m_rbuf);
-	  m_rbuf_head = sizeof(m_tshare);
-	  for(int och = 0; och < m_chout.size(); och++){
-	    m_rbuf_head += (int)(m_chout[och]->write_buf(m_rbuf + m_rbuf_head));
-	  }
-	  if(m_verb){
-	    cout << "Outputs: t=" << m_tshare << " " <<
-			m_rbuf_tail << "/" << res << endl;
-	    for(int och = 0; och < m_chout.size(); och++)
-	      m_chout[och]->print(cout);
-	  }
-	  m_rbuf_head = m_rbuf_tail = 0;
-	}
-      }else if(FD_ISSET(m_sock, &fe)){
-	cerr << "Socket error during recieving packet in " << m_name;
-	cerr << ". Now closing socket." << endl;
-
+      if(res == -1)
+	break;
+      else if (res == 0){
+	cerr << "Socket has been closed, trying reconnect." << endl;
 	return reconnect();
-      }else{
-	// time out;
-	return true;
+      }else
+	m_rbuf_tail += res;
+
+      if(m_rbuf_tail == m_len_pkt_rcv){
+	m_client_fixed = true;
+	m_tshare = *((long long*)m_rbuf);
+	m_rbuf_head = sizeof(m_tshare);
+	for(int och = 0; och < m_chout.size(); och++){
+	  m_rbuf_head += (int)(m_chout[och]->write_buf(m_rbuf + m_rbuf_head));
+	}
+	if(m_verb){
+	  cout << "Outputs: t=" << m_tshare << " " <<
+	    m_rbuf_tail << "/" << res << endl;
+	  for(int och = 0; och < m_chout.size(); och++)
+	    m_chout[och]->print(cout);
+	}
+	m_rbuf_head = m_rbuf_tail = 0;
       }
+    }else if(FD_ISSET(m_sock, &fe)){
+      cerr << "Socket error during recieving packet in " << m_name;
+      cerr << ". Now closing socket." << endl;
+
+      return reconnect();
+    }else{
+      // time out;
+      return true;
+    }
   }
   
   return true;
