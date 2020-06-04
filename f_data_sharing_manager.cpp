@@ -1,4 +1,4 @@
-// Copyright(c) 2013-2019 Yohei Matsumoto, All right reserved. 
+// Copyright(c) 2013-2020 Yohei Matsumoto, All right reserved. 
 
 // f_data_sharing_manager.cpp is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -128,13 +128,13 @@ bool f_data_sharing_manager::proc()
 	if(res == -1)
 	  break;
 	else if (res == 0){
-	  cerr << "Socket has been closed, trying reconnect." << endl;	  
+	  spdlog::error("[{}] Socket has been closed, trying reconnect.",
+			get_name());
 	  return reconnect();
 	}
 	m_wbuf_head += res;
       }else if(FD_ISSET(m_sock, & fe)){
-	cerr << "Socket error during sending packet in " << m_name;
-	cerr << ". Now closing socket." << endl;
+	spdlog::error("[{}] Socket error during sending packet. Closing socket.", get_name());
 	return reconnect();
       }else{
 	// time out;
@@ -173,7 +173,7 @@ bool f_data_sharing_manager::proc()
       if(res == -1)
 	break;
       else if (res == 0){
-	cerr << "Socket has been closed, trying reconnect." << endl;
+	spdlog::error("[{}] Socket has been closed, trying reconnect.", get_name());
 	return reconnect();
       }else
 	m_rbuf_tail += res;
@@ -194,9 +194,7 @@ bool f_data_sharing_manager::proc()
 	m_rbuf_head = m_rbuf_tail = 0;
       }
     }else if(FD_ISSET(m_sock, &fe)){
-      cerr << "Socket error during recieving packet in " << m_name;
-      cerr << ". Now closing socket." << endl;
-
+      spdlog::error("[{}] Socket error during recieving packet in {}. Now closing socket.", get_name());
       return reconnect();
     }else{
       // time out;
