@@ -106,12 +106,20 @@ bool f_data_sharing_manager::proc()
 
   // sending phase
   if(m_svr && m_client_fixed || !m_svr){
+    if(m_verb){
+      cout << "Inputs: t=" << get_time() <<  endl;
+      for(int ich = 0; ich < m_chin.size(); ich++)
+	m_chin[ich]->print(cout);
+    }
+
     m_wbuf_head = m_wbuf_tail = 0;
     (*(long long*)m_wbuf) = m_cur_time;
     m_wbuf_tail = sizeof(m_cur_time);
     for(int ich = 0; ich < m_chin.size(); ich++)
       m_wbuf_tail += (int)(m_chin[ich]->read_buf(m_wbuf + m_wbuf_tail));
-    
+    if(m_verb){
+      cout << "Sending " << m_wbuf_tail << "bytes." << endl;
+    }
     while(m_wbuf_tail > m_wbuf_head){
       FD_ZERO(&fe);
       FD_ZERO(&fw);
@@ -142,11 +150,6 @@ bool f_data_sharing_manager::proc()
 	// time out;
 	break;
       }
-    }
-    if(m_verb){
-      cout << "Inputs: t=" << m_tshare <<  endl;
-      for(int ich = 0; ich < m_chin.size(); ich++)
-	m_chin[ich]->print(cout);
     }
   }
 
@@ -187,6 +190,7 @@ bool f_data_sharing_manager::proc()
 	for(int och = 0; och < m_chout.size(); och++){
 	  m_rbuf_head += (int)(m_chout[och]->write_buf(m_rbuf + m_rbuf_head));
 	}
+
 	if(m_verb){
 	  cout << "Outputs: t=" << m_tshare << " " <<
 	    m_rbuf_tail << "/" << res << endl;
