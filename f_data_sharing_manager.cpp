@@ -170,8 +170,7 @@ bool f_data_sharing_manager::proc()
 		     m_len_pkt_rcv - m_rbuf_tail,
 		     0,
 		     (sockaddr*) & m_sock_addr_snd, 
-		     &m_sz_sock_addr_snd);
-	
+		     &m_sz_sock_addr_snd);	
       if(res == -1)
 	break;
       else if (res == 0){
@@ -179,23 +178,19 @@ bool f_data_sharing_manager::proc()
 	return reconnect();
       }else
 	m_rbuf_tail += res;
-
-      if(m_rbuf_tail == m_len_pkt_rcv){
-	m_client_fixed = true;
-	m_tshare = *((long long*)m_rbuf);
-	m_rbuf_head = sizeof(m_tshare);
-	for(int och = 0; och < m_chout.size(); och++){
-	  m_rbuf_head += (int)(m_chout[och]->write_buf(m_rbuf + m_rbuf_head));
-	}
-	if(m_verb){
-	  cout << "Outputs: t=" << m_tshare << " " <<
-	    m_rbuf_tail << "/" << res << endl;
-	  for(int och = 0; och < m_chout.size(); och++)
-	    m_chout[och]->print(cout);
-	}
-	m_rbuf_head = m_rbuf_tail = 0;
-	break;
+      m_client_fixed = true;
+      m_tshare = *((long long*)m_rbuf);
+      m_rbuf_head = sizeof(m_tshare);
+      for(int och = 0; och < m_chout.size(); och++){
+	m_rbuf_head += (int)(m_chout[och]->write_buf(m_rbuf + m_rbuf_head));
       }
+      if(m_verb){
+	cout << "Outputs: t=" << m_tshare << " " <<
+	  m_rbuf_tail << "/" << res << endl;
+	for(int och = 0; och < m_chout.size(); och++)
+	  m_chout[och]->print(cout);
+      }
+      m_rbuf_head = m_rbuf_tail = 0;
     }else if(FD_ISSET(m_sock, &fe)){
       spdlog::error("[{}] Socket error during recieving packet in {}. Now closing socket.", get_name());
       return reconnect();
