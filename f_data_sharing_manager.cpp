@@ -30,6 +30,7 @@ bool f_data_sharing_manager::init_run()
     m_sock_addr_snd.sin_port = htons(m_port_dst);
     m_sz_sock_addr_snd = sizeof(m_sock_addr_snd);
     set_sockaddr_addr(m_sock_addr_snd, m_host_dst);
+    spdlog::info("[{}] Socket {} and the destination {}:{} is established.", get_name(), m_host_dst, m_port_dst); 
   }else{
     m_svr = true;
     m_client_fixed = false;
@@ -37,9 +38,10 @@ bool f_data_sharing_manager::init_run()
     m_sock_addr_rcv.sin_port = htons(m_port);
     set_sockaddr_addr(m_sock_addr_rcv);
     if(::bind(m_sock, (sockaddr*)&m_sock_addr_rcv, sizeof(m_sock_addr_rcv)) == SOCKET_ERROR){
-      cerr << "Socket error" << endl;
+      spdlog::error("[{}] Socket error.", get_name());
       return false;
     }
+    spdlog::info("[{}] Socket {} bound on port {}", get_name(), m_sock, m_port);
   }
 
   if(m_fname_out[0]){
