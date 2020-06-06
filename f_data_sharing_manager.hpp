@@ -1,4 +1,4 @@
-// Copyright(c) 2013-2019 Yohei Matsumoto, Tokyo University of Marine
+// Copyright(c) 2013-2020 Yohei Matsumoto, Tokyo University of Marine
 // Science and Technology, All right reserved. 
 
 // f_data_sharing_manager.hpp is free software: you can redistribute it and/or modify
@@ -18,6 +18,7 @@
 #define F_DATA_SHARING_MANAGER_HPP
 
 #include "filter_base.hpp"
+#include "ch_aws1_ctrl.hpp"
 
 class f_data_sharing_manager: public f_base
 {
@@ -31,7 +32,13 @@ private:
   bool m_svr;
   bool m_client_fixed;
   bool m_verb;
-
+  bool m_test; // test mode flag
+  ch_ctrl_data *test_in, *test_out;
+  vector<unsigned char *> test_data;
+  vector<unsigned int> test_data_size;
+  unsigned char * test_buf;
+  unsigned int test_count;
+  
   // buffers
   char * m_rbuf, * m_wbuf;
   int m_rbuf_head, m_wbuf_head;
@@ -52,15 +59,21 @@ private:
   
 public:
   f_data_sharing_manager(const char * fname) : f_base(fname), m_verb(false),
-				   m_port(20100), m_port_dst(20101),
-				   m_len_pkt_snd(1024), m_len_pkt_rcv(1024), m_sock(-1),
-				   m_svr(false),
-				   m_rbuf(NULL), m_wbuf(NULL), m_rbuf_head(0), m_wbuf_head(0),
-				   m_rbuf_tail(0), m_wbuf_tail(0), m_len_buf(0), m_tshare(0)
+					       m_test(false), test_in(nullptr),
+					       test_out(nullptr), test_buf(nullptr),
+					       m_port(20100), m_port_dst(20101),
+					       m_len_pkt_snd(1024),
+					       m_len_pkt_rcv(1024), m_sock(-1),
+					       m_svr(false),
+					       m_rbuf(NULL), m_wbuf(NULL),
+					       m_rbuf_head(0), m_wbuf_head(0),
+					       m_rbuf_tail(0), m_wbuf_tail(0),
+					       m_len_buf(0), m_tshare(0)
   {
     m_fname_out[0] = '\0';
     m_fname_in[0] = '\0';
     m_host_dst[0] = '\0';
+    register_fpar("test", &m_test, "Test mode flag.");
     register_fpar("verb", &m_verb, "For debug.");
     register_fpar("port", &m_port, "UDP port.");
     register_fpar("port_dst", &m_port_dst, "Destination UDP port.");
