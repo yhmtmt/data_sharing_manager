@@ -162,6 +162,7 @@ bool f_data_sharing_manager::proc()
 	// client checks the test data 	
 	if(data_size == test_data_size[0] &&
 	   memcmp(test_data[0], test_buf, data_size) == 0){
+	  delete[] test_data[0];
 	  test_data.erase(test_data.begin());
 	  test_data_size.erase(test_data_size.begin());
 	  test_count++;
