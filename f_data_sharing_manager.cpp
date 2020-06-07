@@ -60,12 +60,16 @@ bool f_data_sharing_manager::init_run()
   for (int och = 0; och < m_chout.size(); och++){
     m_len_pkt_rcv += (int) m_chout[och]->get_dsize();
   }
+  spdlog::info("[{}] Allocating {}bytes for receive buffer.",
+	       get_name(), m_len_pkt_rcv);
   
   m_len_pkt_snd = sizeof(m_cur_time);
   for (int ich = 0; ich < m_chin.size(); ich++){
     m_len_pkt_snd += (int) m_chin[ich]->get_dsize();
   }
- 
+  spdlog::info("[{}] Allocating {}bytes for sending buffer.",
+	       get_name(), m_len_pkt_snd);
+  
   m_rbuf = new char [m_len_pkt_rcv];
   if(m_rbuf == NULL)
     return false;
@@ -190,8 +194,18 @@ bool f_data_sharing_manager::proc()
 	m_chin[ich]->print(cout);
     }
     
-    for(int ich = 0; ich < m_chin.size(); ich++)
+    for(int ich = 0; ich < m_chin.size(); ich++){
+      if(m_verb){
+	spdlog::info("[{}] {} addressed at {}.", get_name(), m_chin[ich]->get_name(), m_wbuf_tail);
+      }
       m_wbuf_tail += (int)(m_chin[ich]->read_buf(m_wbuf + m_wbuf_tail));
+    }
+    
+    if(m_wbuf_tail > m_len_pkt_snd){
+      spdlog::error("[{}] Buffer overrun ({}/{}) during sending packet.",
+		    get_name(), m_wbuf_tail, m_len_pkt_snd);
+      return false;
+    }
     
     while(m_wbuf_tail > m_wbuf_head){
       FD_ZERO(&fe);
@@ -202,7 +216,10 @@ bool f_data_sharing_manager::proc()
       tv.tv_usec = 10000;
       
       res = select((int) m_sock + 1, NULL, &fw, &fe, &tv);
-      
+      if(m_verb){
+	spdlog::info("[{}] Sending {}(<{})bytes packet.",
+		     get_name(), m_wbuf_tail, m_len_pkt_snd);
+      }
       if(FD_ISSET(m_sock, &fw)){
 	res = sendto(m_sock, 
 		     (char*) m_wbuf + m_wbuf_head, 
@@ -246,7 +263,11 @@ bool f_data_sharing_manager::proc()
 		     m_len_pkt_rcv - m_rbuf_tail,
 		     0,
 		     (sockaddr*) & m_sock_addr_snd, 
-		     &m_sz_sock_addr_snd);	
+		     &m_sz_sock_addr_snd);
+      if(m_verb){
+	spdlog::info("[{}] Received {}(<{})bytes packet.",
+		     get_name(), res, m_len_pkt_rcv);
+      }
       if(res == -1)
 	break;
       else if (res == 0){
@@ -258,6 +279,10 @@ bool f_data_sharing_manager::proc()
       m_tshare = *((long long*)m_rbuf);
       m_rbuf_head = sizeof(m_tshare);
       for(int och = 0; och < m_chout.size(); och++){
+	if(m_verb){
+	  spdlog::info("[{}] {} addressed at {}.", get_name(), m_chout[och]->get_name(), m_rbuf_head);
+	}
+	
 	m_rbuf_head += (int)(m_chout[och]->write_buf(m_rbuf + m_rbuf_head));
       }
       if(m_verb){
