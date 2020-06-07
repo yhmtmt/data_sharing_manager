@@ -184,6 +184,12 @@ bool f_data_sharing_manager::proc()
     m_wbuf_head = m_wbuf_tail = 0;
     (*(long long*)m_wbuf) = m_cur_time;
     m_wbuf_tail = sizeof(m_cur_time);
+    if(m_verb){
+      cout << "Inputs: t=" << m_tshare <<  endl;
+      for(int ich = 0; ich < m_chin.size(); ich++)
+	m_chin[ich]->print(cout);
+    }
+    
     for(int ich = 0; ich < m_chin.size(); ich++)
       m_wbuf_tail += (int)(m_chin[ich]->read_buf(m_wbuf + m_wbuf_tail));
     
@@ -217,11 +223,6 @@ bool f_data_sharing_manager::proc()
 	// time out;
 	break;
       }
-    }
-    if(m_verb){
-      cout << "Inputs: t=" << m_tshare <<  endl;
-      for(int ich = 0; ich < m_chin.size(); ich++)
-	m_chin[ich]->print(cout);
     }
   }
 
